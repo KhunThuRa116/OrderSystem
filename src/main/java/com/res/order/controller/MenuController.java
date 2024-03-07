@@ -1,13 +1,11 @@
 package com.res.order.controller;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.tomcat.util.codec.binary.Base64;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -18,8 +16,13 @@ import org.springframework.web.bind.annotation.RequestParam;
 import com.res.order.dao.Menu;
 import com.res.order.db.DBAccess;
 
+import jakarta.servlet.http.HttpSession;
+
 @Controller
 public class MenuController {
+	
+	@Autowired
+	HttpSession httpSession;
 	
 	
 //Old method
@@ -63,18 +66,7 @@ public class MenuController {
 		System.out.println("Add Menu Action");
 		
 		try {
-			Class.forName("com.mysql.cj.jdbc.Driver");
-			Connection conn = DriverManager.getConnection(
-					"jdbc:mysql://mysql-3391fbd9-res-order-2024.a.aivencloud.com:15117/res_order_app?sslmode=require", "avnadmin", "AVNS_7tmjKQt-FAOjiyVI_WI");
-			String sql = "INSERT INTO all_menu (menu_photo,menu_name,menu_price,menu_category,menu_detail) VALUES (?,?,?,?,?)";
-			PreparedStatement pstm = conn.prepareStatement(sql);
-			pstm.setBytes(1,menu.getMenuPhoto().getBytes());
-			pstm.setString(2, menu.getMenuName());
-			pstm.setString(3, menu.getMenuPrice());
-			pstm.setInt(4, menu.getMenuCategory());
-			pstm.setString(5, menu.getMenuDetail());
-			
-			pstm.executeUpdate();
+			DBAccess.addMenuAction(menu);
 		} catch (Exception e) {
 			// TODO: handle exception
 			e.printStackTrace();
@@ -92,19 +84,7 @@ public class MenuController {
 		System.out.println(menu.getMenuPrice());
 		
 		try {
-			Class.forName("com.mysql.cj.jdbc.Driver");
-			Connection conn = DriverManager.getConnection(
-					"jdbc:mysql://mysql-3391fbd9-res-order-2024.a.aivencloud.com:15117/res_order_app?sslmode=require", "avnadmin", "AVNS_7tmjKQt-FAOjiyVI_WI");
-			String sql = "UPDATE all_menu SET menu_photo = ?,menu_name = ?, menu_price= ?, menu_category= ?, menu_detail=? WHERE menu_id=?";
-			PreparedStatement pstm = conn.prepareStatement(sql);
-			pstm.setBytes(1,menu.getMenuPhoto().getBytes());
-			pstm.setString(2, menu.getMenuName());
-			pstm.setString(3, menu.getMenuPrice());
-			pstm.setInt(4, menu.getMenuCategory());
-			pstm.setString(5, menu.getMenuDetail());
-			pstm.setInt(6, menu.getMenuId());
-			
-			pstm.executeUpdate();
+			DBAccess.editMenuAction(menu);
 		} catch (Exception e) {
 			// TODO: handle exception
 			e.printStackTrace();
@@ -120,14 +100,7 @@ public class MenuController {
 	public String deleteMenuAction(@ModelAttribute Menu menu) {
 		
 		try {
-			Class.forName("com.mysql.cj.jdbc.Driver");
-			Connection conn = DriverManager.getConnection(
-					"jdbc:mysql://mysql-3391fbd9-res-order-2024.a.aivencloud.com:15117/res_order_app?sslmode=require", "avnadmin", "AVNS_7tmjKQt-FAOjiyVI_WI");
-			String sql = "DELETE FROM all_menu WHERE menu_id=?";
-			PreparedStatement pstm = conn.prepareStatement(sql);
-			pstm.setInt(1,menu.getMenuId());
-			
-			pstm.executeUpdate();
+			DBAccess.deleteMenuAction(menu);
 		} catch (Exception e) {
 			// TODO: handle exception
 			e.printStackTrace();
@@ -140,14 +113,7 @@ public class MenuController {
 	public String toEditMenuPage(Model model,@RequestParam("menuId") int menuId) {
 		
 		try {
-			Class.forName("com.mysql.cj.jdbc.Driver");
-			Connection conn = DriverManager.getConnection(
-					"jdbc:mysql://mysql-3391fbd9-res-order-2024.a.aivencloud.com:15117/res_order_app?sslmode=require", "avnadmin", "AVNS_7tmjKQt-FAOjiyVI_WI");
-			String sql = "SELECT * FROM all_menu WHERE menu_id=?";
-			PreparedStatement pstm = conn.prepareStatement(sql);
-			pstm.setInt(1, menuId);
-			
-			ResultSet rs = pstm.executeQuery();
+			ResultSet rs =DBAccess.editMenu(menuId);
 			Menu menuObj = new Menu();
 			if(rs.next()) {
 				menuObj.setMenuId(rs.getInt("menu_id"));
@@ -158,6 +124,8 @@ public class MenuController {
 				menuObj.setPhotoBase64String(Base64.encodeBase64String(rs.getBytes("menu_photo")));
 			}
 			model.addAttribute("menuObj",menuObj);
+			
+			
 		} catch (Exception e) {
 			// TODO: handle exception
 		}
@@ -169,16 +137,27 @@ public class MenuController {
 	//AllMenu Page for Customer Start
 	@GetMapping("/allMenu")
 	public String toAllMenuPage(Model model) {
+		// table_id from session
+		// system out session data
+		System.out.println(httpSession.getAttribute("tableId"));
+		int tabId = (int) httpSession.getAttribute("tableId");
+		
+		//get customer_id by using table_id and check_status=0
+		//save in session too
+		try {
+			ResultSet rs = DBAccess.getCustomerId(tabId);
+			if(rs.next()) {
+				httpSession.setAttribute("cusId",rs.getInt("customer_id"));
+				System.out.println(httpSession.getAttribute("cusId"));
+			}
+		} catch (Exception e) {
+			// TODO: handle exception
+			e.printStackTrace();
+		}
 		
 		try {
-			Class.forName("com.mysql.cj.jdbc.Driver");
-			Connection conn = 
-			DriverManager.getConnection(
-					"jdbc:mysql://mysql-3391fbd9-res-order-2024.a.aivencloud.com:15117/res_order_app?sslmode=require", "avnadmin", "AVNS_7tmjKQt-FAOjiyVI_WI");
-			String sql = "SELECT * FROM all_menu";
-			PreparedStatement pstm = conn.prepareStatement(sql);
 			
-			ResultSet rs = pstm.executeQuery(); //multiple record
+			ResultSet rs = DBAccess.allMenu();
 			List <Menu> setMenu = new ArrayList<>();
 			List <Menu> tanpinMenu = new ArrayList<>();
 			List <Menu> dessertMenu = new ArrayList<>();
@@ -245,13 +224,7 @@ public class MenuController {
 		public String toAdminAllMenuPage(Model model) {
 			
 			try {
-				Class.forName("com.mysql.cj.jdbc.Driver");
-				Connection conn = DriverManager.getConnection(
-						"jdbc:mysql://mysql-3391fbd9-res-order-2024.a.aivencloud.com:15117/res_order_app?sslmode=require", "avnadmin", "AVNS_7tmjKQt-FAOjiyVI_WI");
-				String sql = "SELECT * FROM all_menu";
-				PreparedStatement pstm = conn.prepareStatement(sql);
-				
-				ResultSet rs = pstm.executeQuery(); //multiple record
+				ResultSet rs = DBAccess.adminAllMenu();
 				List <Menu> setMenu = new ArrayList<>();
 				List <Menu> tanpinMenu = new ArrayList<>();
 				List <Menu> dessertMenu = new ArrayList<>();

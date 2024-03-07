@@ -94,7 +94,8 @@
 
                 <!-- Item -->
                 <div class="d-flex flex-row" th:each="obj : ${setMenus}">
-                    <div class="item-container col-2 bg-dark" style="width: 230px;" th:object="${obj}">
+					
+                    <div class="d-flex flex-column item-container col-2 bg-dark" style="width: 230px;" th:object="${obj}">
                         <img style="object-fit: cover;margin: 0; padding: 0;" class th:src="'data:image/*;base64,'+ *{photoBase64String}"
                             alt="" width="230px" height="120">
                         <p style="margin: 0; padding: 0;" class="text-white text-center mt-2">
@@ -117,25 +118,23 @@
 								<div class="d-flex-center" >
 		                            <div class="btn-group" >
 		                                <button class="btn btn-danger" type="button" id="minusBtn1" th:onclick="decreaseOne([[*{menuId}]])">-</button>
-		                                <input type="text" class="form-control text-center" value="0" th:id="'quantity'+ *{menuId}" readonly>
+		                                <input type="text"  name="menuQuantity" class="form-control text-center" value="0" th:id="'quantity'+ *{menuId}" readonly>
 		                                <button class="btn btn-primary" type="button" id="plusBtn1" th:onclick="increaseOne([[*{menuId}]])">+</button>
 		                            </div>                
 	                        	</div>
 	               
-	                        	<button th:id="'cartBtn'+ *{menuId}" class="form-control btn btn-success rounded-0" disabled>
+	                        	<button th:onclick="addCartAction([[${obj}]])" th:id="'cartBtn'+ *{menuId}" class="form-control btn btn-success rounded-0" disabled>
 									Add Cart <i class="bi bi-cart-fill"></i>
 								</button>
 							</div>
 						</div>
                        
 						
-						<div class="d-flex-center" th:if="*{statusOfStock == 0}">
-							<button  class="btn btn-danger form-control rounded=0">SoldOut</button>
+						<div class="d-flex mt-auto" th:if="*{statusOfStock == 0}">
+							<input class="form-control text-center rounded-0 bg-danger text-white " type="text"
+								value="売り切れ" disabled>
 						</div>
-						
-            			
-                        
-                        
+						                      
                         <!--<div class="d-flex">
 							<a th:if="*{statusOfStock == 0}" class="btn btn-danger form-control rounded=0">SoldOut</a>
 							<a th:if="*{statusOfStock == 1}" class="btn btn-warning form-control rounded=0" >10</a>
@@ -327,13 +326,30 @@
             </div>
         </div>
     </div>
+    
+    <div class="bg-dark p-2 position-fixed w-100 bottom-0">
+		<a class="btn btn-danger" href="okaikei">
+			<i class="bi bi-cash-coin fs-4"></i>
+			<span>お会計</span>
+		</a>
+		<a class="btn btn-success" href="toCart">
+			<i class="bi bi-cart3 fs-4"></i>
+			<span>カート</span>
+		</a>
+		<a class="btn btn-warning" href="toOrderHistory">
+			<i class="bi bi-list-columns-reverse fs-4"></i>
+			<span>注文歴</span>
+		</a>
+	</div>
+    
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+		
         function increaseOne(x) {
             let quantityId = 'quantity' + x;
             let quantity = document.getElementById(quantityId);
             let cartBtnId = 'cartBtn' + x;
-            let cartBtn = document.getElementById(cartBtnId);
+        	let cartBtn = document.getElementById(cartBtnId);
             console.log(quantityId)
 
             if( quantity.value >=10){
@@ -346,18 +362,64 @@
             	cartBtn.disabled=false;
 			}
             
-            
-
         }
 
         function decreaseOne(x) {
             let quantityId = 'quantity' + x;
             let quantity = document.getElementById(quantityId);
+            let cartBtnId = 'cartBtn' + x;
+        	let cartBtn = document.getElementById(cartBtnId);
 
             if (quantity.value > 0) {
-                quantity.value = parseInt(quantity.value) - 1;
+                quantity.value = parseInt(quantity.value) - 1;   
             }
+
         }
+        
+        function addCartAction(Obj){
+			console.log("Test String");
+			console.log(Obj);
+			
+			let quantityId = 'quantity' + (Obj.menuId);
+            let quantity = document.getElementById(quantityId);
+            let x = quantity.value;
+            let y = Obj.menuName;
+            let z = Obj.menuPrice;
+            
+			console.log(quantity.value);
+			console.log(Obj.menuName);
+			console.log(Obj.menuPrice);
+			
+			
+		
+			// 1. new XMLHttpRequest オブジェクトを作成
+			let xhr = new XMLHttpRequest();
+			
+			// 2. 設定: URL /article/.../load に対する GET-リクエスト
+			xhr.open('GET', `addCart?count=${x}&itemName=${y}&itemPrice=${z}`);
+			
+			// 3. ネットワーク経由でリクエスト送信
+			xhr.send();
+			
+			// 4. レスポンスを受け取った後に呼び出されます
+			xhr.onload = function() {
+			  if (xhr.status == 200) { // レスポンスの HTTP ステータスを解析
+			  //when request is truely completed
+            	 quantity.value=0;
+            	 let cartBtnId = 'cartBtn' + Obj.menuId;
+        		let cartBtn = document.getElementById(cartBtnId);
+        		cartBtn.disabled=true;
+    
+			    console.log(xhr.response); // e.g. 404: Not Found
+			    //console.log(xhr.response.status);
+			  } 
+			  
+			};
+			
+			xhr.onerror = function() {
+			  console.log("Request failed");
+			};
+		}
     </script>
 </body>
 

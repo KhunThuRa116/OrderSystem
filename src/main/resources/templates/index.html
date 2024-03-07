@@ -40,6 +40,16 @@
                         <input type="password" class="form-control bg-light fs-6 fw-light  smaller-placeholder"
                             placeholder="パスワード入力してください。" name="user_pwd" id="floatingInput">
                     </div>
+                    
+                    <div class="mb-3" >
+						<label class="form-label">Select Table</label>
+						<select class="form-select" name="tableId" >
+							<option  th:each="tabId:${tableIdObj}" th:object="${tabId}"
+							th:disabled="*{tableStatus == 0 ? 'true':'false'}" th:class="*{tableStatus == 0 ? 'bg-danger text-light':''}" > 
+								<span th:text="*{tableId}"></span>
+							</option>
+						</select>
+					</div>
 
                     <button type="submit" class="btn btn-primary col-12">ログイン</button>
                 </form>
